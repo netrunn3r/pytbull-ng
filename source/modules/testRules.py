@@ -5,12 +5,12 @@
 # @lastmodified $Date: 2011-05-26 21:25:30 +0200 (Thu, 26 May 2011) $
 #
 
-import ConfigParser
+import configparser
 
 class TestRules():
     def __init__(self, target, cnf):
         # Read configuration
-        self.config = ConfigParser.RawConfigParser()
+        self.config = configparser.RawConfigParser()
         self.config.read(cnf)
 
         self._target = target
@@ -41,7 +41,7 @@ class TestRules():
         self.payloads.append([
             "Full SYN Scan",
             "command",
-            "%sudo% %nmap% -sS -p- %target%",
+            "%sudo% %nmap% -sS -p- -T4 %target%",
             "122:1:1"
             ])
 
@@ -85,4 +85,4 @@ class TestRules():
         return self.payloads
 
 if __name__ == "__main__":
-    print TestRules("192.168.100.48").getPayloads()
+    print(TestRules("192.168.100.48").getPayloads())

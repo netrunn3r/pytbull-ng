@@ -1,0 +1,6 @@
+scapy
+feedparser
+CherryPy
+M2Crypto
+paramiko
+requests

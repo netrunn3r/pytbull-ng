@@ -1,11 +1,13 @@
 #!/usr/bin/env python
-import ConfigParser
-import urllib2
+import configparser
+import sys
+#import urllib2
+import urllib.request
 
 class IpReputation():
     def __init__(self, target, cnf):
         # Read configuration
-        self.config = ConfigParser.RawConfigParser()
+        self.config = configparser.RawConfigParser()
         self.config.read(cnf)
 
         self._target = target
@@ -22,20 +24,28 @@ class IpReputation():
             }
             try:
                 # build a new opener that uses a proxy requiring authorization
-                proxy_support = urllib2.ProxyHandler({"http" : \
+#                proxy_support = urllib2.ProxyHandler({"http" : \
+#                "http://%(proxyuser)s:%(proxypass)s@%(proxyhost)s:%(proxyport)d" % proxyinfo})
+                proxy_support = urllib.request.ProxyHandler({"http" : \
                 "http://%(proxyuser)s:%(proxypass)s@%(proxyhost)s:%(proxyport)d" % proxyinfo})
-                opener = urllib2.build_opener(proxy_support, urllib2.HTTPHandler)
+#                opener = urllib2.build_opener(proxy_support, urllib2.HTTPHandler)
+                opener = urllib.request.build_opener(proxy_support, urllib.request.HTTPHandler)
                 # install it
-                urllib2.install_opener(opener)
-            except Exception, err:
-                print "***ERROR in proxy initialization: %s" % err
-                print "Check your proxy settings in config.cfg"
+                urllib.request.install_opener(opener)
+#                urllib2.install_opener(opener)
+            except Exception as err:
+                print("***ERROR in proxy initialization: %s" % err)
+                print("Check your proxy settings in config.cfg")
                 sys.exit()
 
-        iplist = urllib2.urlopen('http://malc0de.com/bl/IP_Blacklist.txt')
-        for ip in iplist:
-            if not ip.startswith('\n') and not ip.startswith('//'):
-                self.lowreputation.append(ip.split('\n')[0])
+#        iplist = urllib2.urlopen('http://malc0de.com/bl/IP_Blacklist.txt')
+        #iplist = urllib.request.urlopen('http://malc0de.com/bl/IP_Blacklist.txt')  # malc0de block urllib user-agent # netrunn3r
+        #req = urllib.request.Request('http://malc0de.com/bl/IP_Blacklist.txt', headers={'User-Agent': 'Mozilla/5.0'})
+        #iplist = urllib.request.urlopen(req).read().decode().split('\n')
+        with open('data/IP_Blacklist.txt') as iplist:  # create option to choose: online or local file  # netrunn3r
+            for ip in iplist:
+                if not ip.startswith('\n') and not ip.startswith('//'):
+                    self.lowreputation.append(ip.split('\n')[0])
 
 
     def getPayloads(self):
@@ -51,4 +61,4 @@ class IpReputation():
         return self.payloads
 
 if __name__ == "__main__":
-    print IpReputation("192.168.100.48", 'config.cfg').getPayloads()
+    print(IpReputation("192.168.100.48", 'config.cfg').getPayloads())

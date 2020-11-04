@@ -7,12 +7,12 @@ been withrawn from pytbull.
 SF change #3310130 - Thanks to Keith Pawson for the idea ;)
 """
 
-import ConfigParser
+import configparser
 
 class BruteForce():
     def __init__(self, target, cnf):
         # Read configuration
-        self.config = ConfigParser.RawConfigParser()
+        self.config = configparser.RawConfigParser()
         self.config.read(cnf)
 
         self._target = target
@@ -33,4 +33,4 @@ class BruteForce():
         return self.payloads
 
 if __name__ == "__main__":
-    print BruteForce('192.168.1.16', 'config.cfg').getPayloads()
+    print(BruteForce('192.168.1.16', 'config.cfg').getPayloads())

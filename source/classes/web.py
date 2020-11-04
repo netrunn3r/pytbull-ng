@@ -2,7 +2,7 @@
 #-*- coding: utf-8 -*-
 
 import cherrypy
-import database
+import classes.database as database
 
 class Footer:
     def footer(self):
@@ -410,6 +410,7 @@ class Search:
 if __name__ == "__main__":
 
     main = Main()
-    main.details = web.Details()
+#    main.details = web.Details()
+    main.details = Details()
 
     cherrypy.quickstart(main)

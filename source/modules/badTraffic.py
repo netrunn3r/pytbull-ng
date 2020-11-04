@@ -4,12 +4,12 @@
 # @version $Revision: 7 $
 # @lastmodified $Date: 2011-05-24 13:34:19 +0200 (Tue, 24 May 2011) $
 #
-import ConfigParser
+import configparser
 
 class BadTraffic():
     def __init__(self, target, cnf):
         # Read configuration
-        self.config = ConfigParser.RawConfigParser()
+        self.config = configparser.RawConfigParser()
         self.config.read(cnf)
 
         self._target = target
@@ -44,4 +44,4 @@ class BadTraffic():
         return self.payloads
 
 if __name__ == "__main__":
-    print BadTraffic("192.168.100.48",'config.cfg').getPayloads()
+    print(BadTraffic("192.168.100.48",'config.cfg').getPayloads())

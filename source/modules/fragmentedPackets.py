@@ -5,12 +5,12 @@
 # @lastmodified $Date: 2011-05-28 13:01:56 +0200 (Sat, 28 May 2011) $
 #
 
-import ConfigParser
+import configparser
 
 class FragmentedPackets():
     def __init__(self, target, cnf):
         # Read configuration
-        self.config = ConfigParser.RawConfigParser()
+        self.config = configparser.RawConfigParser()
         self.config.read(cnf)
 
         self._target = target
@@ -51,4 +51,4 @@ class FragmentedPackets():
         return self.payloads
 
 if __name__ == "__main__":
-    print FragmentedPackets("192.168.100.48").getPayloads()
+    print(FragmentedPackets("192.168.100.48").getPayloads())

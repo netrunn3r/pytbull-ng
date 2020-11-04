@@ -2,12 +2,12 @@
 #-*- coding: utf-8 -*-
 
 import sqlite3
-import ConfigParser
+import configparser
 
 class DB():
     def __init__(self, cnf):
         # Read configuration
-        self.config = ConfigParser.RawConfigParser()
+        self.config = configparser.RawConfigParser()
         self.config.read(cnf)
         self._db = self.config.get('PATHS', 'db')
 
@@ -57,7 +57,7 @@ class DB():
             nextkeyword = " and "
         if alert != None and alert != '':
             filter += nextkeyword + "test_alert like '%%%s%%' ESCAPE '\\'" % alert.replace('%', '\%')
-        # print """***DEBUG: select * from test %s""" % filter
+        # print("""***DEBUG: select * from test %s""" % filter)
         c.execute("""select * from test %s""" % filter)
         l = []
         for row in c:
@@ -69,7 +69,7 @@ class DB():
         """
         Truncate table test
         """
-        conn = sqlite3.connect(self._db)
+        conn = sqlite3.connect(self._db, isolation_level=None)
         c = conn.cursor()
         c.execute('delete from test;')
         c.execute('vacuum;')
@@ -167,13 +167,13 @@ class DB():
 
 
 if __name__ == "__main__":
-    print "Truncating table test"
+    print("Truncating table test")
     DB().truncateTestResults()
-    print "Initial list"
+    print("Initial list")
     DB().listTests()
-    print "Adding entry..."
+    print("Adding entry...")
     DB().addTestResult(('test_module', 'test_type', 'test_dt_start', 'test_dt_end', 'test_name',
         80, 'tcp', 'payload', 'test_sig_match', 'test_alerts', 2))
-    print "New list"
+    print("New list")
     DB().listTests()
     

@@ -5,12 +5,12 @@
 # @lastmodified $Date: 2011-05-28 13:01:56 +0200 (Sat, 28 May 2011) $
 #
 
-import ConfigParser
+import configparser
 
 class EvasionTechniques():
     def __init__(self, target, cnf):
         # Read configuration
-        self.config = ConfigParser.RawConfigParser()
+        self.config = configparser.RawConfigParser()
         self.config.read(cnf)
 
         self._target = target
@@ -22,7 +22,7 @@ class EvasionTechniques():
         self.payloads.append([
             "Nmap decoy test (6th position)",
             "command",
-            """%sudo% %nmap% -sS -A -D 192.168.100.1,192.168.100.2,192.168.100.3,192.168.100.4,192.168.100.5,ME %target%""",
+            """%sudo% %nmap% -sS -A -T4 -D 192.168.100.1,192.168.100.2,192.168.100.3,192.168.100.4,192.168.100.5,ME %target%""",
             self.config.get('CLIENT','ipaddr')
             ])
 
@@ -30,7 +30,7 @@ class EvasionTechniques():
         self.payloads.append([
             "Nmap decoy test (7th position)",
             "command",
-            """%sudo% %nmap% -sS -A -D 192.168.100.1,192.168.100.2,192.168.100.3,192.168.100.4,192.168.100.5,192.168.100.6,ME %target%""",
+            """%sudo% %nmap% -sS -A -T4 -D 192.168.100.1,192.168.100.2,192.168.100.3,192.168.100.4,192.168.100.5,192.168.100.6,ME %target%""",
             self.config.get('CLIENT','ipaddr')
             ])
 
@@ -48,7 +48,7 @@ class EvasionTechniques():
         self.payloads.append([
             "Nmap scan with fragmentation",
             "command",
-            """%sudo% %nmap% -PN -sS -A -f %target%""",
+            """%sudo% %nmap% -PN -sS -T4 -A -f %target%""",
             "122:2:1"
             ])
 
@@ -145,4 +145,4 @@ class EvasionTechniques():
         return self.payloads
 
 if __name__ == "__main__":
-    print EvasionTechniques("192.168.100.48").getPayloads()
+    print(EvasionTechniques("192.168.100.48").getPayloads())

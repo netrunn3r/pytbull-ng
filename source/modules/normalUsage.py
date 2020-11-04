@@ -4,12 +4,13 @@
 # Written for Simulation of Attacks and Defense by Robert Pallas
 #
 
-import ConfigParser
+import configparser
+import modules.denialOfService as DenialOfService
 
 class NormalUsage():
     def __init__(self, target, cnf):
         # Read configuration
-        self.config = ConfigParser.RawConfigParser()
+        self.config = configparser.RawConfigParser()
         self.config.read(cnf)
 
         self._target = target
@@ -38,4 +39,4 @@ class NormalUsage():
         return self.payloads
 
 if __name__ == "__main__":
-    print DenialOfService("192.168.100.48").getPayloads()
+    print(DenialOfService("192.168.100.48").getPayloads())

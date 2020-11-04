@@ -11,12 +11,12 @@ This script is inspired from the one written by Jaime Blasco
 (jaime.blasco #at# alienvault #dot# com)
 """
 
-import ConfigParser
+import configparser
 
 class ShellCodes():
     def __init__(self, target, cnf):
         # Read configuration
-        self.config = ConfigParser.RawConfigParser()
+        self.config = configparser.RawConfigParser()
         self.config.read(cnf)
 
         self._target = target
@@ -315,4 +315,4 @@ class ShellCodes():
         return self.payloads
 
 if __name__ == "__main__":
-    print ShellCodes("192.168.100.48").getPayloads()
+    print(ShellCodes("192.168.100.48").getPayloads())

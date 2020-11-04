@@ -38,6 +38,7 @@ Parameters for writing tests:
     2: {PCAP_PATH} is the path (string) of the pcap to replay
     3: {EXPECTED_PATTERN} is the pattern (string) expected in the triggered alerts
 """
+import modules.badTraffic as BadTraffic
 
 class PcapReplay():
     def __init__(self, target, cnf):
@@ -56,4 +57,4 @@ class PcapReplay():
         return self.payloads
 
 if __name__ == "__main__":
-    print BadTraffic("192.168.100.48").getPayloads()
+    print(BadTraffic("192.168.100.48").getPayloads())
