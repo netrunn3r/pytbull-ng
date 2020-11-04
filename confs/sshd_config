@@ -1,0 +1,6 @@
+Port 22
+AddressFamily inet
+ListenAddress 0.0.0.0
+PermitRootLogin yes
+PasswordAuthentication yes
+HostKey /etc/ssh/ssh_host_rsa_key
