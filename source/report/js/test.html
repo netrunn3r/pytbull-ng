@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>test</title>
+    <script type="text/javascript" src="jqplot/jquery.js"></script>
+    <script type="text/javascript" src="jqplot/jquery.jqplot.js"></script>
+    <script type="text/javascript" src="jqplot/plugins/jqplot.dateAxisRenderer.js"></script>
+    <script type="text/javascript" src="jqplot/plugins/jqplot.canvasTextRenderer.js"></script>
+    <script type="text/javascript" src="jqplot/plugins/jqplot.canvasAxisTickRenderer.js"></script>
+    <script type="text/javascript" src="jqplot/plugins/jqplot.categoryAxisRenderer.js"></script>
+    <script type="text/javascript" src="jqplot/plugins/jqplot.barRenderer.js"></script>
+    <link rel="stylesheet" type="text/css" href="jqplot/jquery.jqplot.css" />
+    <script type="text/javascript">
+    $(document).ready(function(){
+      var line1 = [['Cup Holder Pinion Bob', 7], ['Generic Fog Lamp', 9], ['HDTV Receiver', 15],
+      ['8 Track Control Module', 12], [' Sludge Pump Fourier Modulator', 3],
+      ['Transcender/Spice Rack', 6], ['Hair Spray Danger Indicator', 18]];
+
+      var plot1 = $.jqplot('chart1', [line1], {
+        title: 'Concern vs. Occurrance',
+        series:[{renderer:$.jqplot.BarRenderer}],
+        axesDefaults: {
+            tickRenderer: $.jqplot.CanvasAxisTickRenderer ,
+            tickOptions: {
+              angle: -30,
+              fontSize: '10pt'
+            }
+        },
+        axes: {
+          xaxis: {
+            renderer: $.jqplot.CategoryAxisRenderer
+          }
+        }
+      });
+    });
+    </script>
+</head>
+<body>
+<div id="chart1" style="height:300px;width:400px;"></div>
+</body>
+</html>

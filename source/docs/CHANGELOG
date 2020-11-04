@@ -1,0 +1,92 @@
+v2.1                                                                  2016-03-16
+--------------------------------------------------------------------------------
+- Bug #14: Dropbox Returning HTTP 429 	 
+- Bug #13: ***ERROR in checkNewVersionAvailable: list index out of range
+
+v2.0beta1                                                             2011-11-23
+--------------------------------------------------------------------------------
+- FR #3439544: new module normalUsage
+- FR #3438624: add an offline option
+
+v2.0                                                                  2011-06-01
+--------------------------------------------------------------------------------
+- Bug #3308732: fixed (wrong increment in test number for clientSideAttacks
+  module)
+- FR #3308727: Pattern matching now supported in all modules
+- FR #3306114: Creation of a commandParser() function enabling an easier writing
+  of tests. The function also understands the %target% keyword (-t arg) as well
+  as any environment variable defined in config.cfg (ENV section added). All
+  tests rewriten using the new syntax with environment variables
+- FR #3306742: Support of gateway mode added (--mode=gateway) to enable download
+  of PDF files on client (reverse shell not needed in this mode)
+- FR #3306761: Report has been completely redesigned with css and js.
+  It is now W3C compliant report + TOC as fixed div to enable an easy navigation
+- FR #3306826: Support of UDP for tests based on the "socket" syntax
+- FR #3306836: Grouping of all modules in a dedicated ./modules/ directory
+- FR #3306837: Debug option (--debug), showing output in real time
+- FR #3306961: support of FTPS/SFTP in addition to FTP to grab alerts file
+  Tested with vsftpd (FTP, FTPS) and mysecureshell (SFTP)
+- FR #3306831: Autoupdater with config preserve function
+- Abstraction layer for generating report (now a dedicated class file) for
+  future implementation of pdf report (v3.0)
+- Configuration file updated
+- Basic checks updated. Now a dedicated function
+- tempfile (/tmp/pytbull.tmp) now in config.cfg
+- docs completely updated
+
+v1.3                                                                  2011-05-20
+--------------------------------------------------------------------------------
+- Bug fix 3305244: Error while using reverse shell
+- Minor changes (check new version) due to migration of pytbull on Sourceforge
+
+v1.2                                                                  2011-05-20
+--------------------------------------------------------------------------------
+- Stable release
+- Feature: Now possibility to choose port for reverse shell. Thanks to Keith
+   Pawson for the suggestion!
+- Bug fix: New test added to basic checks: port 22/tcp. Thanks Keith for
+   reporting this bug!
+- Bug fix: New test added to basic checks: port 80/tcp. Thanks Keith for
+   reporting this bug!
+- Bug fix: Error handling added in pytbull.py for getAlertsFile() function
+- Feature: Backtrack request added in docs/
+
+v1.1                                                                  2011-05-13
+--------------------------------------------------------------------------------
+- Stable release
+- Issue #2 (3305154 in SF) fixed (test number incrementing twice just after the
+   last test from multipleFailedLogins test)
+- Issue #3 (3305155 in SF) fixed (pcapReplay module not present in the checks on
+   STDOUT)
+- Code factoring in pytbull.py
+- Timing options are now in parameters (config.cfg)
+- Automatically checks and informs if a new version is available (use PROXY
+   section in the configuration file if needed)
+- New basic checks: checks that paths in the config file are valid
+- SVN tags added in source code
+
+v1.0                                                                  2011-05-07
+--------------------------------------------------------------------------------
+- Stable Release
+- String pattern added (Checks presence of control signature) based on
+   regular expressions. Not implemented for clientSideAttacks and
+   multipleFailedLogins modules. Enables to validate test results by
+   checking the presence of a string in the results.
+- pcapReplay test module added: pytbull now supports pcap replay based on
+   tcpreplay
+- No need to specify the IDS/IPS type with the -i parameter. Pytbull now
+   supports other IDS/IPS than Snort & Suricata provided you can grab the
+   alerts file via FTP
+- Issue #1 fixed (3305153 in SF)
+
+v0.3                                                                  2011-05-30
+--------------------------------------------------------------------------------
+- First Stable Release
+
+v0.2                                                                  2011-04-29
+--------------------------------------------------------------------------------
+- Beta Release
+
+v0.1                                                                  2011-04-28
+--------------------------------------------------------------------------------
+- Beta Release

@@ -1,0 +1,714 @@
+#!/usr/bin/env python
+"""
+Pytbull is a very flexible python based IDS/IPS Testing Framework developed by
+Sebastien Damaye.
+It supports any IDS/IPS (including Snort & Suricata) provided you can grab a
+text-based alerts file using FTP, FTPS or SFTP.
+
+It is shipped with about 300 tests grouped in 9 testing modules but you can easily
+write your own tests, and even your own modules. The syntax of the tests has been
+simplified in version 2.0. It supports full string based commands, string based
+commands using environment variables as well as the initial list-based syntax.
+
+Pytbull supports two main architectures: a *standalone mode* (default) where the
+IDS/IPS probe is plugged on the network as a standard client and a *gateway mode*
+where all packets go thru.
+
+It generates a html based report enabling an easy understanding of alerts triggered
+for each test.
+
+For more information, please refer to the official website:
+<http://pytbull.sourceforge.net>
+
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+"""
+
+from optparse import OptionParser
+import ConfigParser
+import socket
+import time
+from ftplib import FTP
+import subprocess
+import os
+import os.path
+import sys
+import datetime
+import re
+import urllib2
+import types
+
+# dirty fix to bypass SSL cert error when intercepting SSL traffic
+# with autosigned cert
+import ssl
+if hasattr(ssl, '_create_unverified_context'):
+    ssl._create_default_https_context = ssl._create_unverified_context
+
+
+try:
+    from scapy.all import *
+except ImportError:
+    print "scapy missing:"
+    print "* apt-based: sudo apt-get install python-scapy"
+    print "* macports : sudo port install py26-scapy"
+    sys.exit()
+
+try:
+    from feedparser import parse
+except:
+    print "feedparser missing:"
+    print "* apt-based: sudo apt-get install python-feedparser"
+    print "* macports : sudo port install py26-feedparser"
+    sys.exit()
+
+try:
+    import cherrypy
+except:
+    print "cherrypy3 missing:"
+    print "* apt-based: sudo apt-get install python-cherrypy3"
+    print "* macports : sudo port install py26-cherrypy3"
+    sys.exit()
+
+sys.path.append("classes")
+import database
+import web
+
+sys.path.append("modules")
+import testRules
+import badTraffic
+import fragmentedPackets
+import bruteForce
+import evasionTechniques
+import shellCodes
+import denialOfService
+import clientSideAttacks
+import pcapReplay
+import normalUsage
+import ipReputation
+
+class Pytbull():
+    def __init__(self, target, mode, cnf, debug, offline):
+        """
+        Initialization of class Pytbull
+        """
+        print "\n(%s mode)" % mode
+        if debug==1:
+            print "(debug mode)"
+        if offline==1:
+            print "(offline)"
+        print ""
+
+        # Read configuration
+        self._cnf = cnf
+        self.config = ConfigParser.RawConfigParser()
+        self.config.read(self._cnf)
+
+        # Conditional import
+        if self.config.get('FTP','ftpproto').lower() == 'ftps':
+            try:
+                from M2Crypto import ftpslib
+            except ImportError:
+                print "***ERROR: M2Crypto missing"
+                print "M2Crypto required for FTPS: sudo apt-get install python-m2crypto"
+                sys.exit()
+        elif self.config.get('FTP','ftpproto').lower() == 'sftp':
+            try:
+                import paramiko
+            except ImportError:
+                print "***ERROR: Paramiko missing"
+                print "Paramiko required for SFTP: sudo apt-get install python-paramiko"
+                sys.exit()
+
+        # Vars initialization
+        self._target    = target
+        self._mode      = mode
+        self._debug     = debug
+        self._offline   = offline
+        self.timeout    = self.config.getint('TIMING', 'urltimeout')
+
+        # Proxy settings / initialization
+        if self.config.get('CLIENT','useproxy')=='1':
+            proxyinfo = {
+                'proxyuser' : self.config.get('CLIENT','proxyuser'),
+                'proxypass' : self.config.get('CLIENT','proxypass'),
+                'proxyhost' : self.config.get('CLIENT','proxyhost'),
+                'proxyport' : int(self.config.get('CLIENT','proxyport'))
+            }
+            try:
+                # build a new opener that uses a proxy requiring authorization
+                proxy_support = urllib2.ProxyHandler({"http" : \
+                "http://%(proxyuser)s:%(proxypass)s@%(proxyhost)s:%(proxyport)d" % proxyinfo})
+                opener = urllib2.build_opener(proxy_support, urllib2.HTTPHandler)
+                # install it
+                urllib2.install_opener(opener)
+            except Exception, err:
+                print "***ERROR in proxy initialization: %s" % err
+                print "Check your proxy settings in config.cfg"
+                sys.exit()
+        self.testnum    = 1
+        # List of modules and their class name (as specified in the ./modules/ directory)
+        # SF#3439544: new module normalUsage
+        self.modules    = [
+            ['Client Side Attacks',     'clientSideAttacks'],
+            ['Test Rules',              'testRules'],
+            ['Bad Traffic',             'badTraffic'],
+            ['Fragmented Packets',      'fragmentedPackets'],
+            ['Brute Force',             'bruteForce'],
+            ['Evasion Techniques',      'evasionTechniques'],
+            ['ShellCodes',              'shellCodes'],
+            ['Denial of Service',       'denialOfService'],
+            ['Pcap Replay',             'pcapReplay'],
+            ['Normal Usage',            'normalUsage'],
+            ['IP Reputation',           'ipReputation']
+        ]
+
+        # Check if a new version is available
+        if self._offline != 1:
+            if self.checkNewVersionAvailable() != 0:
+                print "+--------------------------------------------------------+"
+                print "| A NEW VERSION IS AVAILABLE                             |"
+                print "| To update pytbull, issue following command:            |"
+                print "| git clone git://git.code.sf.net/p/pytbull/code pytbull |"
+                print "+--------------------------------------------------------+"
+                print ""
+
+        # Confirm user acceptance
+        self.confirmUserAcceptance()
+
+        # Check if prgm is called with root privs
+        # Needed for generating raw packets (e.g. some nmap scans)
+        print "BASIC CHECKS"
+        print "------------"
+        print "Checking root privileges".ljust(65, '.'),
+        if(os.getuid() != 0):
+            print "[ Failed ]"
+            print "\nRoot privileges required!"
+            sys.exit(0)
+        print "[   OK   ]"
+
+        # Checking remote ports. Ports have to be opened to send payloads on these ports
+        # Notice that a FTP server must listen to port 21/tcp if you use the multipleFailedLogins
+        # module since alerts are configured to listen to this port. See for example
+        # Snort policy.rules: alert tcp $HOME_NET 21 -> $EXTERNAL_NET any
+        self.checkPort(21, 'FTP', 'Install FTP on the remote host: sudo apt-get install vsftpd')
+        self.checkPort(22, 'SSH', 'Install SSH on the remote host: sudo apt-get install openssh-server')
+        self.checkPort(80, 'HTTP', 'Install apache on the remote host: sudo apt-get install apache2')
+        
+        # Chek if paths (from config file) are valid
+        self.checkEnvVar()
+
+        # Remove temp file
+        print "Removing temporary file".ljust(65, '.'),
+        if os.path.exists(self.config.get('PATHS', 'tempfile')):
+            os.remove(self.config.get('PATHS', 'tempfile'))
+        print "[   OK   ]"
+
+        # Truncate table test
+        print "Cleaning database".ljust(65, '.'),
+        database.DB(self._cnf).truncateTestResults()
+        print "[   OK   ]"
+
+        # Print tests selection
+        print "\nTESTS"
+        print "------------"
+
+        for module in self.modules:
+            print module[0].ljust(65, '.'),
+            if self.config.get('TESTS', module[1]) == '1':
+                print "[   yes  ]"
+            else:
+                print "[   no   ]"
+
+        print ""
+
+    def confirmUserAcceptance(self):
+        # FR 3310129
+        print "+------------------------------------------------------------------------+"
+        print "| pytbull will set off IDS/IPS alarms and/or other security devices      |"
+        print "| and security monitoring software. The user is aware that malicious     |"
+        print "| content will be downloaded and that the user should have been          |"
+        print "| authorized before running the tool.                                    |"
+        print "+------------------------------------------------------------------------+"
+        accept = raw_input("Do you accept (y/n)? ")
+        if accept not in ("y", "yes"):
+            sys.exit()
+        print ""
+
+    def checkPort(self, port, servicename, hint):
+        """
+        Check if remote port is open
+        Prerequisite for payloads send to this port
+        """
+        print ("Checking remote port %s/tcp (%s)" % (port, servicename)).ljust(65, '.'),
+        try:
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            s.connect( (self._target,int(port)) )
+            s.close()
+            print "[   OK   ]"
+        except Exception, err:
+            print "[ Failed ]"
+            print "\n***ERROR: %s" % err
+            print "Port %s/tcp seems to be closed" % port
+            print hint
+            sys.exit(0)
+
+    def checkEnvVar(self):
+        """
+        Checks the validity of each environment variable
+        Only check variable which value begins with / (considered as paths)
+        """
+        for path in self.config.options('ENV'):
+            if (self.config.get('ENV', path)).startswith('/'):
+                print ("Checking path for "+path).ljust(65, '.'),
+                if not os.path.exists(self.config.get('ENV', path)):
+                    print "[ Failed ]"
+                    print "\n***ERROR: %s not found. Check the config file." % path
+                    sys.exit()
+                else:
+                    print "[   OK   ]"
+
+    def checkNewVersionAvailable(self):
+        """
+        Check if a new version of pytbull is available
+        """
+        try:
+            current = open('docs/VERSION', 'r').read()
+            """
+            Fix bug#13
+            """
+            available = urllib2.urlopen('https://sourceforge.net/p/pytbull/code/ci/master/tree/docs/VERSION?format=raw', timeout=self.timeout).read()
+            if current!=available:
+                return available.split('\n')[0]
+            else:
+                return 0
+        except Exception, err:
+            print "***ERROR in checkNewVersionAvailable: %s" % err
+            print "If you use a proxy, check your configuration."
+            sys.exit()
+
+    def commandParser(self, testtype, command):
+        """
+        Detects if command is a string or an array
+        If command is a string, it transforms the command to
+        a list of arguments.
+        In all cases, it replaces environment variables with full path
+        """
+        if testtype == 'command':
+            if type(command) == types.StringType:
+                # Type is a string: it has to be transformed into a list
+                l = command.split(" ")
+                pos = 0
+                for i in l:
+                    if (i.startswith('%') and i.endswith('%')):
+                        # if item contains environment variable (e.g. %nmap%), it is replaced with its value (config.cfg)
+                        if(i == "%target%"):
+                            l[pos] = self._target
+                        elif(self.config.has_option('ENV',i.replace('%',''))):
+                            l[pos] = self.config.get('ENV',i.replace('%',''))
+                        else:
+                            print """***ERROR: Environment variable not found in command %s""" % command
+                            sys.exit()
+                    pos += 1
+            elif type(command) == types.ListType:
+                # Type is a list: nothing to do
+                l = command
+            else:
+                print """***ERROR: Syntax error for command %s""" % command
+                sys.exit()
+            return l
+        else:
+            envlist = self.config.options('ENV')
+            tmp = command
+            # Replace every eventual reference to an environment variable
+            for envvar in envlist:
+                tmp = tmp.replace("%"+envvar+"%", self.config.get('ENV', envvar))
+            # Replace %target% keyword
+            tmp = tmp.replace('%target%', self._target)
+            return tmp
+
+    def downloadFile(self, base_url, file_name):
+        """
+        Used in gateway mode to download malicious PDF files on local machine
+        Download a file from a remote server and save it locally
+        Use eventual proxy settings as defined in the config.cfg file
+        """
+        url = os.path.join(base_url, file_name)
+        req = urllib2.Request(url)
+        try:
+            f = urllib2.urlopen(req, timeout=self.timeout)
+            local_file = open(os.path.join(self.config.get('PATHS', 'pdfdir'), file_name), "w")
+            local_file.write(f.read())
+            local_file.close()
+        except Exception, err:
+            print "[ Failed ]"
+            print "\n***ERROR in downloadFile: %s" % err
+            sys.exit(0)
+
+    def doTest(self, module, payloads):
+        """
+        Do all tests from a given payloads list
+        and grab new alerts for each test
+        and generate report for each test
+        Support of following syntaxes: socket, command, scapy, pcap
+        """
+        for payload in payloads:
+            # Perform test & write report
+            str = "TEST #%s - %s" % (self.testnum, payload[0])
+            print str[:62].ljust(65,'.'),
+            test_dt_start = datetime.datetime.now()
+            pattern = ""
+
+            if payload[1] == "socket":
+                cmd = self.commandParser('socket', payload[4])
+                (test_port, test_proto) = (payload[2], payload[3].lower())
+                test_payload = cmd
+                if payload[3].lower() == 'tcp':
+                    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                else:
+                    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                s.connect((self._target,payload[2]))
+                s.send(cmd)
+                pattern = payload[5]
+                s.close()
+            elif payload[1] == "command":
+                cmd = self.commandParser('command', payload[2])
+                (test_port, test_proto) = (None, None)
+                test_payload = ' '.join(cmd)
+                if self._debug==1:
+                    print "\n\n***Debug: sending command: %s" % ' '.join(cmd)
+                    subprocess.call(cmd)
+                else:
+                    subprocess.call(cmd, stdout=subprocess.PIPE)
+                pattern = payload[3]
+            elif payload[1] == "scapy":
+                cmd = self.commandParser('scapy', payload[2])
+                if self._debug == 1:
+                    print "\n\n***Debug: sending scapy payload: %s" % cmd
+                    cmd = cmd.replace('verbose=0', 'verbose=1')
+                (test_port, test_proto) = (None, None)
+                test_payload = cmd
+                eval(cmd)
+                pattern = payload[3]
+            elif payload[1] == "pcap":
+                pcap = os.path.join(self.config.get('PATHS', 'pcapdir'), payload[2])
+                (test_port, test_proto) = (None, None)
+                test_payload = pcap
+                if self._debug == 1:
+                    # verbose mode
+                    print "Pcap Replay file"
+                    cmd = [self.config.get('ENV','sudo'), self.config.get('ENV','tcpreplay'), '-i', self.config.get('CLIENT','iface'), pcap]
+                else:
+                    # quiet mode
+                    cmd = [self.config.get('ENV','sudo'), self.config.get('ENV','tcpreplay'), '-q', '-i', self.config.get('CLIENT','iface'), pcap]
+                if self._debug==1:
+                    subprocess.call(cmd)
+                else:
+                    subprocess.call(cmd, stdout=subprocess.PIPE)
+                pattern = payload[3]
+
+            test_dt_end = datetime.datetime.now()
+
+            # Sleep before getting alerts
+            time.sleep(int(self.config.get('TIMING', 'sleepbeforegetalerts')))
+
+            # Get new alerts and calculate new offset
+            self.getAlertsFile()
+            res = self.getAlertsFromOffset(self.config.get('PATHS', 'tempfile'), self.offset)
+
+            # Sig matching
+            if pattern != "":
+                if re.search(pattern, res):
+                    test_flag = 2
+                else:
+                    if res == '':
+                        test_flag = 0
+                    else:
+                        test_flag = 1
+                test_sig_match = pattern
+            else:
+                test_sig_match = None
+                test_flag = None
+
+            test_alert = res
+            self.offset = self.getOffset(self.config.get('PATHS', 'tempfile'))
+
+            database.DB(self._cnf).addTestResult((module, payload[1], test_dt_start,
+                test_dt_end, payload[0], test_port, test_proto, test_payload,
+                test_sig_match, res, test_flag))
+
+            print "[  done  ]"
+            
+            # Sleep before next test
+            time.sleep(int(self.config.get('TIMING', 'sleepbeforenexttest')))
+            self.testnum += 1
+
+
+    def doClientSideAttacksTest(self, payloads):
+        """
+        clientSideAttacks Module consists of downloading remote malicious PDF files
+        to trigger alerts from flow to_client.
+        In standalone mode, reverse shell is used to force the probe downloading the files
+        In gateway mode, files are downloaded from the client (eventual proxy settings are used)
+        """
+        if self._mode=="standalone":
+            # Check whether reverseshell is running on remote server (port 12345/tcp)
+            # Open socket (it will be closed at the end of the tests)
+            # on port 12345/tcp
+            print "Checking if reverse shell is running on remote host".ljust(65,'.'),
+            try:
+                s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                s.connect((self._target, int(self.config.get('SERVER', 'reverseshellport'))))
+            except:
+                print "[ Failed ]"
+                print "\n***ERROR: Please setup reverse shell on remote server first or use --mode=gateway!"
+                sys.exit(0)
+            print "[   OK   ]"
+
+        for payload in payloads:
+            # Perform test & write report
+            str = "TEST #%s - %s" % (self.testnum, payload[0])
+            print str[:62].ljust(65,'.'),
+            test_dt_start = datetime.datetime.now()
+
+            if self._mode=="standalone":
+                # Send cmd to execute on server side (wget file)
+                s.send("wget %s" % os.path.join(self.config.get('PATHS', 'urlpdf'), payload[0]))
+                # Issue 3450032 - Synchronisation issue. The server has to instruct
+                # the client that the file has been successfully downloaded before it
+                # goes to next file
+                s.recv(1024)
+            else:
+                self.downloadFile(self.config.get('PATHS', 'urlpdf'), payload[0])
+
+            # Sleep before getting alerts
+            time.sleep(int(self.config.get('TIMING', 'sleepbeforegetalerts')))
+
+            # Get new alerts and calculate new offset
+            self.getAlertsFile()
+            res = self.getAlertsFromOffset(self.config.get('PATHS', 'tempfile'), self.offset)
+
+            # Sig matching
+            pattern = payload[1]
+            if pattern != "":
+                if re.search(pattern, res):
+                    test_flag = 2
+                else:
+                    if res == '':
+                        test_flag = 0
+                    else:
+                        test_flag = 1
+                test_sig_match = pattern
+            else:
+                test_sig_match = None
+                test_flag = None
+
+            self.offset = self.getOffset(self.config.get('PATHS', 'tempfile'))
+
+            test_dt_end = datetime.datetime.now()
+            database.DB(self._cnf).addTestResult(('clientSideAttacks', 'wget', test_dt_start,
+                test_dt_end, payload[0], None, None, None,
+                test_sig_match, res, test_flag))
+
+            print "[  done  ]"
+            self.testnum += 1
+
+        if self._mode=="standalone":
+            # Close socket
+            s.close()
+
+
+    def doAllTests(self):
+        """
+        Do tests for each module contained in self.modules list (defined in initialization function of class)
+        """
+        # Initial offset
+        self.getAlertsFile()
+        self.offset = self.getOffset(self.config.get('PATHS', 'tempfile'))
+
+        # Do all tests
+        # As the socket is not persistent, client side attacks have to be done before all tests
+        for module in self.modules:
+            # Test is performed only if selected in config.cfg
+            if self.config.get('TESTS', module[1]) == '1':
+                print "\n%s\n------------" % module[0].upper()
+                if module[1]=='clientSideAttacks':
+                    self.doClientSideAttacksTest( clientSideAttacks.ClientSideAttacks(self._target).getPayloads() )
+#                elif module[1]=='multipleFailedLogins':
+#                    self.doMultipleFailedLoginsTest( multipleFailedLogins.MultipleFailedLogins(self._target).getPayloads() )
+                else:
+                    self.doTest( module[1], eval( ('%s.%s'+'(self._target,self._cnf).getPayloads()') % (module[1], module[1][:1].upper()+module[1][1:]) ) )
+
+        # Done!
+        print "\n\n-----------------------"
+        print "DONE. Check the report."
+        print "-----------------------\n"
+
+
+    def getAlertsFile(self):
+        """
+        Get the alerts file from remote host using protocol specified in
+        config.cfg (ftpproto=ftp|ftps|sftp)
+        and save it to temp file specified in config.cfg (PATHS.tempfile)
+        """
+        try:
+            # FTP Connection
+            if self.config.get('FTP','ftpproto').lower() == 'ftp' or self.config.get('FTP','ftpproto').lower() == 'ftps':
+                if self.config.get('FTP','ftpproto').lower() == 'ftp':
+                    ftp = FTP()
+                    ftp.connect(self._target, int(self.config.get('FTP', 'ftpport')))
+                elif self.config.get('FTP','ftpproto').lower() == 'ftps':
+                    ftp = ftpslib.FTP_TLS()
+                    ftp.connect(self._target, int(self.config.get('FTP', 'ftpport')))
+                    ftp.auth_tls()
+                    ftp.set_pasv(0)
+
+                ftp.login(self.config.get('FTP','ftpuser'),self.config.get('FTP','ftppasswd'))
+                # Get file
+                f = open(self.config.get('PATHS', 'tempfile'), "w")
+                alertsFile = self.config.get('PATHS', 'alertsfile')
+                ftp.retrbinary("RETR %s" % alertsFile, f.write)
+                #Close file and FTP connection
+                f.close()
+                ftp.quit()
+            elif self.config.get('FTP','ftpproto').lower() == 'sftp':
+                import paramiko
+                transport = paramiko.Transport((self._target, int(self.config.get('FTP', 'ftpport'))))
+                transport.connect(username=self.config.get('FTP','ftpuser'), password=self.config.get('FTP','ftppasswd'))
+                sftp = paramiko.SFTPClient.from_transport(transport)
+                sftp.get(self.config.get('PATHS', 'alertsfile'), self.config.get('PATHS', 'tempfile'))
+                sftp.close()
+                transport.close()
+
+        except Exception, err:
+            print "\n***ERROR: %s Error, %s" % (self.config.get('FTP','ftpproto').upper(), err)
+            print "Check your configuration (section FTP in config.cfg)."
+            print "Also check privileges on remote host."
+            sys.exit()
+
+    def getOffset(self, report):
+        """
+        Get initial offset (Number of lines in alert file)
+        """
+        f = open(report, "r")
+        offset = len(f.readlines())
+        f.close()
+        return offset
+
+    def getAlertsFromOffset(self, report, offset):
+        f = open(report, "r")
+        c = f.readlines()
+        return ''.join(c[offset:])
+
+
+class WS():
+    def __init__(self):
+        # Web server
+        self.current_dir = os.path.dirname(os.path.abspath(__file__))
+
+    def startserver(self, cnf):
+        cherrypy.config.update({'environment': 'production',
+                                'log.screen': True})
+
+        conf = {'/js': {'tools.staticdir.on': True,
+                        'tools.staticdir.dir': os.path.join(self.current_dir, 'report', 'js', 'jqplot'),
+                        'tools.staticdir.content_types': {'javascript': 'text/javascript',
+                                                            'css': 'text/css'}
+                      },
+                '/img': {'tools.staticdir.on': True,
+                         'tools.staticdir.dir': os.path.join(self.current_dir, 'report', 'img'),
+                         'tools.staticdir.content_types': {'png': 'image/png'}
+                      },
+                '/styles2.css': {'tools.staticfile.on': True,
+                         'tools.staticfile.filename': os.path.join(self.current_dir, 'report', 'css', 'styles2.css')
+                      }
+                  }
+        print "\nWebserver started at http://127.0.0.1:8080\n(use ^C to stop)\n"
+        main = web.Main(cnf)
+        main.details = web.Details(cnf)
+        main.search = web.Search(cnf)
+        cherrypy.quickstart(main, '/', config=conf)
+
+
+if __name__ == '__main__':
+
+    banner = """
+                                 _   _           _ _
+                     _ __  _   _| |_| |__  _   _| | |
+                    | '_ \| | | | __| '_ \| | | | | |
+                    | |_) | |_| | |_| |_) | |_| | | |
+                    | .__/ \__, |\__|_.__/ \__,_|_|_|
+                    |_|    |___/
+                       Sebastien Damaye, aldeid.com"""
+    usg = "(sudo) ./%prog [options]"
+    #config = ConfigParser.RawConfigParser()
+    #config.read('config.cfg')
+    ver = banner + "\n                                Version "
+    ver += open('docs/VERSION','r').read() + '\n'
+
+    parser = OptionParser(usage=usg, version=ver)
+    parser.add_option("-t", "--target", dest="target",
+        help="host to connect to (e.g. 192.168.100.48)")
+    parser.add_option("-c", "--config", dest="cnf", default="conf/config.cfg",
+        help="config file (default: conf/config.cfg)")
+    parser.add_option("-m", "--mode", dest="mode", default="standalone",
+        help="mode (standalone or gateway)")
+    parser.add_option("-d", "--debug",
+        action="store_true", dest="debug", default=0,
+        help="print status messages to stdout")
+    parser.add_option("--offline",
+        action="store_true", dest="offline", default=0,
+        help="useful if you don't have connectivity")
+    (options, args) = parser.parse_args(sys.argv)
+
+    print banner + "\n"
+    print "What would you like to do?"
+    print "1. Run a new campaign (will erase previous results)"
+    print "2. View results from previous campaign"
+    print "3. Exit"
+    choice = raw_input("Choose an option: ")
+    if choice=="1":
+        # Run a new campaign
+        if not options.target:
+            parser.error("Host missing. Use -t <target>.")
+
+        if options.mode not in ('standalone', 'gateway'):
+            parser.error("Invalid mode. Mode=standalone|gateway")
+
+        if not os.path.isfile(options.cnf):
+            parser.error("Invalid config file")
+
+        if options.debug ==0:
+            debug = 0
+        else:
+            debug = 1
+
+        # sourceforge feature request 3438624
+        if options.offline ==0:
+            offline = 0
+        else:
+            offline = 1
+        # Instantiate Pytbull class
+        oPytbull = Pytbull(options.target, options.mode, options.cnf, debug, offline)
+        # Do all tests
+        oPytbull.doAllTests()
+        # Destruct object
+        del oPytbull
+        # Start WebServer
+        WS().startserver(options.cnf)
+    elif choice=="2":
+        # View results from previous campaign
+        WS().startserver(options.cnf)
+    else:
+        # Exit
+        sys.exit()

@@ -1,0 +1,80 @@
+DESCRIPTION
+
+    The installation is really straightforward. The framework has been developed
+    in  Python,  both  on  the client and on the server side. Refer to following
+    sections for the installation process.
+
+
+CLIENT
+
+    Ensure  Python (2.6.5) and following dependency are installed. On Debian
+    based Linux distributions (Debian, *ubuntu), just issue:
+
+        sudo apt-get install \
+            python \
+            python-scapy \
+            python-iniparse
+
+    The default method to grab the alerts file is ftp. If you want to use a
+    different protocol (ftps or sftp), you will need one of the following
+    packages:
+    - For ftps:
+        
+        sudo apt-get install python-m2crypto
+
+    - For sftp:
+
+        sudo apt-get install python-paramiko
+
+    Also  install  nmap,  hping3,  nikto and tcpreplay. Either install them from
+    sources or from the repositories. From the packages, this can be simply done
+    by issuing:
+
+        sudo apt-get install \
+            nmap \
+            hping3 \
+            nikto \
+            tcpreplay
+
+    The last step  is  to configure the server.  Refer to the CONFIGURATION help
+    document.
+
+REMOTE TARGET (IDS/IPS)
+
+    Depending on your architecture, you can use one of these two modes:
+    - standalone mode (--mode=standalone or nothing). If you use the
+      clientSideAttacks module, you will need to install the reverseshell on the
+      remote target.
+    - gateway mode (--mode=gateway). All traffic goes thru your IDS/IPS and no
+      reverse shell is needed. Malicious files can be downloaded locally.
+
+    If you are in standalone mode and you use the clientSideAttacks module, you
+    need Python (2.6.5) on the remote IDS/IPS. Under Debian based distributions
+    (Debian, *buntu, ...) chances are that Python is already installed.
+    To install it from the repositories, just issue:
+
+        sudo apt-get install python
+
+    If you don't want or can't install it, you can use netcat as a reverse shell
+    instead.
+
+    Whatever mode is used, you will need at least a service (FTP, FTPS or SFTP)
+    running on the plateform to provide pytbull with the alerts file. You can
+    use vsftpd for (S)FTP and mysecureshell for SFTP
+    <http://mysecureshell.sourceforge.net/>. To install a simple FTP service on
+    Debian based distributions, just issue:
+
+        sudo apt-get install vsftpd
+
+    Last thing: ports 22 and 80 must be opened, you can install SSH and Apache:
+
+        sudo apt-get install \
+            apache2 \
+            openssh-server
+
+THIRD PARTY
+
+    The third party server is used to download malicious documents from the
+    Internet. Either use the one specified in the configuration file
+    (PATHS.urlpdf) or use your own. You can grab the malicious files from this
+    address: <http://dl.dropbox.com/u/30211728/clientsideattacks.tar.bz2>

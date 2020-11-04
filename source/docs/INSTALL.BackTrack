@@ -1,0 +1,10 @@
+pytbull is included in the BackTrack repositories. If it doesn't appear in your
+distribution, just issue:
+
+    apt-get update && apt-get install pytbull
+
+pytbull is available from:
+
+- CLI: /pentest/enumeration/ids/pytbull/
+- GUI: Applications > BackTrack > Information Gathering > Network Analysis >
+    IDS IPS Identification > pytbull

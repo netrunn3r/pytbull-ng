@@ -1,0 +1,7 @@
+- FR #3308695 Logging of events in a database (local or remote)
+  Support of mysql and postgresql as databases
+  Dynamic report instead of flat html file, enabling dynamic navigation and
+  calculations
+- FR #3306115 New module: IP reputation?
+- possibility to export in pdf
+- New tests

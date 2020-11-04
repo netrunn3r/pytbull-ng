@@ -1,0 +1,19 @@
+Pytbull  is  a  flexible  python  based  IDS/IPS  Testing Framework developed by
+Sebastien Damaye.  It supports any IDS/IPS (including Snort & Suricata) provided
+you can grab a text-based alerts file using FTP, FTPS or SFTP.
+
+It  is  shipped  with  about  300 tests grouped in 9 testing modules but you can
+easily write your own tests,  and even your own modules. The syntax of the tests
+has been simplified  in  version 2.0.  It supports  full string based  commands,
+string  based  commands using environment variables  as well as the initial list
+based syntax.
+
+Pytbull supports two main architectures: a *standalone mode* (default) where the
+IDS/IPS  probe  is  plugged  on  the network as a standard client and a *gateway
+mode* where all packets go thru.
+
+It  generates  a  html  based  report  enabling  an easy understanding of alerts
+triggered for each test.
+
+For more information, please refer to the official website:
+<http://pytbull.sourceforge.net>

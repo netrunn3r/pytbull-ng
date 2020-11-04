@@ -1,0 +1,208 @@
+The configuration file is  composed  of SECTIONS as well as variables.  Sections
+are  identified  by [SECTION]  and variables are composed of the variable itself
+and its value, separated by "=".
+
+All values are text based (string as well as integers). Don't add quotes
+(" or ') for strings.
+
+CLIENT section
+---------------
+ipaddr
+    Mandatory. Your IP address. Needed for evasionTechniques module (Nmap decoy
+    test) to identify if your host has been detected.
+
+iface
+    Mandatory. The interface (eth0, eth1, wlan0, ...) used by pytbull. Used by
+    the tcpReplay module.
+
+useproxy
+    Mandatory. If you use a proxy to connect to the Internet, set it to 1. Else,
+    leave 0. Default: 0
+
+proxyhost
+    Mandatory if useproxy=1. Proxy IP address.
+
+proxyport
+    Mandatory if useproxy=1. Proxy port to connect to. Default: 8080
+
+proxyuser
+    Optional. Only used if useproxy=1. If your proxy requires an authentication,
+    use this variable to specify your username.
+
+proxypass               
+    Optional. Only used if useproxy=1. If your proxy requires an authentication,
+    use this variable to specify your password.
+
+
+PATHS section
+---------------
+urlpdf
+    Mandatory. Used by the clientSideAttacks module to download malicious files.
+    Default: http://dl.dropbox.com/u/30211728/
+    If you want to use your own third party server, you can download all 257
+    malicious files, you can get them from here:
+    <http://dl.dropbox.com/u/30211728/clientsideattacks.tar.bz2>
+
+pdfdir
+    Mandatory. Used in gateway mode (--mode=gateway) by the clientSide Attacks
+    module to save malicious files. Default: pdf/malicious
+    Don't put trailing slash at the end
+
+pcapdir
+    Mandatory. Used by the pcapReplay module to store pcap files to be replayed.
+    Default: pcap
+    Don't put trailing slash at the end
+
+tempfile
+    Mandatory. Used by pytbull to locally save the alerts file.
+    Default: /tmp/pytbull.tmp
+
+alertsfile
+    Mandatory. Remote text based alerts file.
+    Default for Snort: /var/log/snort/alert
+    Default for Suricata: /var/log/suricata/fast.log
+
+
+ENV section
+---------------
+sudo
+    Mandatory. Path to sudo. Default: /usr/bin/sudo
+    In BackTrack, use /usr/bin/sudo
+
+nmap
+    Mandatory. Path to Nmap. Default: /usr/bin/nmap
+    In BackTrack, use /usr/local/bin/nmap
+
+nikto
+    Mandatory. Path to Nikto.
+    Default: /data/pentest/scanners/nikto-2.1.4/nikto.pl
+    In BackTrack, use /pentest/web/nikto/nikto.pl
+
+niktoconf
+    Mandatory. Path to Nikto configuration file.
+    Default: /data/pentest/scanners/nikto-2.1.4/nikto.conf
+    In BackTrack, use /pentest/web/nikto/nikto.conf
+
+hping3
+    Mandatory. Path to hping3. Default: /usr/sbin/hping3
+    In BackTrack, use /usr/sbin/hping3
+
+tcpreplay
+    Mandatory. Path to tcpreplay. Default: /usr/bin/tcpreplay
+    In BackTrack, use /pentest/sniffers/tcpreplay/tcpreplay
+
+localhost
+    Mandatory. Reference to loopback interface. Default: 127.0.0.1
+
+
+Adding environment variables
+Environment variables above are required by the set of tests that comes with the
+default installation of pytbull. You can add your own environment variables and
+use them in the tests using the following syntax: %envvar%.
+Also to notice the use of the %target% keyword (-t argument) that you can use in
+your tests.
+
+
+FTP section
+---------------
+ftpproto
+    Mandatory. Protocol to use to grab the remote alerts file (specified in
+    PATHS.alertsfile). Default: ftp
+    Supported protocols: ftp, ftps, sftp
+
+ftpport
+    Mandatory. Port used by the remote service (Commonly 21/tcp for ftp(s) and
+    22/tcp for sftp). Default: 21
+    Notice: Whatever ftpproto you use, a standard ftp service running on port
+    21/tcp is required to be able to trigger some type of alerts. Example for
+    Snort: policy.rules: alert tcp $HOME_NET 21 -> $EXTERNAL_NET any
+
+ftpuser
+    Optional. If the remote service (ftp, ftps, sftp) requires an authentication
+    use this to specify your username.
+
+ftppasswd
+    Optional. If the remote service (ftp, ftps, sftp) requires an authentication
+    use this to specify your password.
+
+
+TIMING section
+---------------
+sleepbeforegetalerts
+    Mandatory. Used by all modules but multipleFailedLogins. Time (in seconds)
+    before getting the remote alerts file, after payload has been sent.
+    Default: 2
+    Depending on your network througput, you can change this value to ensure a
+    proper detection of the payloads.
+
+sleepbeforenexttest
+    Mandatory. Used by all modules but multipleFailedLogins. Time (in seconds)
+    between the last download of alertsfile and the next test. Default: 2
+    Depending on your network througput, you can change this value to ensure a
+    proper detection of the payloads.
+
+sleepbeforetwoftp
+    Mandatory. Exclusively used by the multipleFailedLogins module. Time (in
+    seconds) Default: 2
+    Depending on your network througput, you can change this value to ensure a
+    proper detection of the payloads.
+
+
+SERVER section
+---------------
+reverseshellport
+    Optional. Used in default mode (--mode=standalone). Port the reverseshell is
+    listening on. Default: 12345
+
+
+TESTS section
+---------------
+clientSideAttacks
+    Mandatory. Run (1) or don't run (0) the clientSideAttacks module.'
+    This module contains 257 payloads (malicious files).
+    Default: 1
+
+testRules
+    Mandatory. Run (1) or don't run (0) the testRules module.'
+    This module contains 7 payloads.
+    Default: 1
+
+badTraffic
+    Mandatory. Run (1) or don't run (0) the badTraffic module.
+    This module contains 3 payloads.
+    Default: 1
+
+fragmentedPackets
+    Mandatory. Run (1) or don't run (0) the fragmentedPackets module.
+    This module contains 4 payloads.
+    Default: 1
+
+multipleFailedLogins
+    Mandatory. Run (1) or don't run (0) the multipleFailedLogins module.
+    This module contains 5 payloads (failed logins attempts against the remote
+    FTP service).
+    Default: 1
+
+evasionTechniques
+    Mandatory. Run (1) or don't run (0) the evasionTechniques module.
+    This module contains 15 payloads.
+    Default: 1
+
+shellCodes
+    Mandatory. Run (1) or don't run (0) the shellCodes module.
+    This module contains 13 payloads. Thanks to Jaime Blasco!
+    Default: 1
+
+denialOfService
+    Mandatory. Run (1) or don't run (0) the denialOfService module.
+    This module contains 1 payload.
+    Default: 1
+
+pcapReplay
+    Mandatory. Run (1) or don't run (0) the pcapReplay module.
+    This module contains 1 payload.
+    Default: 1
+
+
+For more information on the modules, please refer to the official documentation,
+available here: <http://pytbull.sourceforge.net>
