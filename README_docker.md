@@ -1,7 +1,7 @@
 # Quick reference
 
 -	**Maintained by**:  
-	[the pytbul-ng maintainer](https://github.com/netrunn3r/pytbull-ng)
+	[Michal Chrobak](https://github.com/netrunn3r/pytbull-ng)
 
 -	**Where to get help**:  
 	[the pytbull-ng wiki](https://github.com/netrunn3r/pytbull-ng/wiki)
@@ -15,17 +15,22 @@
 # Supported tags and respective `Dockerfile` links
 
 -	[`latest`]()
--	~~[`stable`]()~~
+-	~~[`stable`]()~~ (to early for stable version)
 -	[`dev`]()
 
 # What is pytbull-ng?
 
 Pytbull-ng is an IDS/IPS testing framework for any IDS/IPS.
-Original version, pytbull, was developed by Sebastien Damaye (sebastien #dot# damaye #at# gmail #dot# com). Michal Chrobak continue development of this tool as pytbull-ng, making it more adapted to the current days.
+Original version, pytbull, was developed by Sebastien Damaye (sebastien #dot# damaye #at# gmail #dot# com). Michal Chrobak continue development of this tool as pytbull-ng, making it more adapted to the current days, eg:
+1. migrate to Python 3
+2. refresh attacks types and payloads
+3. dockerize it
 
 It is shipped with about 300 tests grouped in 9 testing modules but you can easily write your own tests, and even your own modules. It supports full string based commands, string based commands using environment variables as well as the initial list-based syntax.
 
-![logo](https://github.com/netrunn3r/pytbull-ng/source/report/img/pytbull.png)
+**It is under heavy development to refresh old pytbull to be truly next generation of pytbull. However current version (main branch / latest image) is fully operating and can be used**
+
+![logo](https://raw.githubusercontent.com/netrunn3r/pytbull-ng/main/img/pytbull.png)
 
 # How to use this image
 
@@ -43,16 +48,16 @@ $ docker  run --rm -it efigo/pytbull -m attacker -t <ip from victim>
 ```
 
 ## Testing IDS/IPS
-![network_architecture](https://github.com/netrunn3r/pytbull-ng/img/pytbull_arch.png)
+![network_architecture](https://raw.githubusercontent.com/netrunn3r/pytbull-ng/main/img/pytbull_arch.png)
 
-On first host run:
+On victim host run:
 
 ```console
 $ docker network create -d macvlan --subnet=<host network> --gateway=<host gateway ip> -o parent=<host interface> net_pub
 $ docker run --rm -it --network=net_pub --ip=<ip from host network> --name=pytbull-ng_victim efigo/pytbull-ng -m victim
 ```
 
-On second host run:
+On attacker host run:
 
 ```console
 $ sysctl net.ipv4.ip_forward=1

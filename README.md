@@ -1,6 +1,6 @@
 # pytbull-ng
 
-![logo](https://github.com/netrunn3r/pytbull-ng/source/report/img/pytbull.png)
+![logo](https://raw.githubusercontent.com/netrunn3r/pytbull-ng/main/img/pytbull.png)
 
 Pytbull-ng is an IDS/IPS testing framework for any IDS/IPS.
 Original version, pytbull, was developed by Sebastien Damaye (sebastien #dot# damaye #at# gmail #dot# com). Michal Chrobak continue development of this tool as pytbull-ng, making it more adapted to the current days, eg:
