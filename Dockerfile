@@ -36,8 +36,8 @@ RUN echo "https://dl-cdn.alpinelinux.org/alpine/edge/testing" >> /etc/apk/reposi
     # Install tools for pytbull
     python3 nmap nmap-nselibs nmap-scripts nikto apache2-utils scapy hping3 tcpreplay apache2 openssh-server vsftpd \
     # Install python requirements
-    py3-feedparser py3-cherrypy py3-paramiko py3-requests py3-m2crypto py3-pip \
-    && python3 -m pip install scapy \
+    py3-feedparser py3-paramiko py3-requests py3-m2crypto py3-pip \
+    && python3 -m pip install scapy cherrypy \
     && chmod +x /pytbull/entrypoint.sh
     
 # Add ncrack files from builder

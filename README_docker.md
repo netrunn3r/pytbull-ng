@@ -16,7 +16,6 @@
 
 -	[`latest`]()
 -	~~[`stable`]()~~ (to early for stable version)
--	[`dev`]()
 
 # What is pytbull-ng?
 
@@ -78,10 +77,6 @@ This image is based on *main* branch from github, which contains working, but no
 ## `pytbull-ng:stable`
 
 This image is based on *stable* branch from github, which contains working and widely tested features.
-
-## `pytbull-ng:dev`
-
-This image is based on *dev* branch from github, which is under development and some features may not work, but there may be some new feature which are not present in *stable* or *master* branch.
 
 # License
 
