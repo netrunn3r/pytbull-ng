@@ -27,15 +27,16 @@ class TestRules():
             "1:1122:8"
             ])
 
-        ### LFI using NULL byte
-        self.payloads.append([
-            "LFI using NULL byte",
-            "socket",
-            80,
-            "tcp",
-            "GET /index.php?page=../../../etc/passwd%00 HTTP/1.1\r\nHost: 127.0.0.1\r\nUser-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.7.5) Gecko/20041202 Firefox/1.0\r\n\r\n",
-            "1:1122:8"
-            ])
+        ### [TO REMOVE] LFI using NULL byte
+        # null code has been fixed with PHP 5.3.4 in 2010
+        # self.payloads.append([
+        #     "LFI using NULL byte",
+        #     "socket",
+        #     80,
+        #     "tcp",
+        #     "GET /index.php?page=../../../etc/passwd%00 HTTP/1.1\r\nHost: 127.0.0.1\r\nUser-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.7.5) Gecko/20041202 Firefox/1.0\r\n\r\n",
+        #     "1:1122:8"
+        #     ])
 
         ### Full SYN Scan
         self.payloads.append([

@@ -46,13 +46,14 @@ class PcapReplay():
 
     def getPayloads(self):
 
-        ### slammer
-        self.payloads.append([
-            "slammer worm",
-            "pcap",
-            "slammer_rw.pcap",
-            ""
-            ])
+        ### [TO REMOVE] slammer
+        # attack from 2003, works on SQL Server 2000 and Desktop Engine 2000
+        # self.payloads.append([
+        #     "slammer worm",
+        #     "pcap",
+        #     "slammer_rw.pcap",
+        #     ""
+        #     ])
 
         return self.payloads
 

