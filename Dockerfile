@@ -1,4 +1,4 @@
-FROM alpine:latest as builder
+FROM alpine:3.12 as builder
 RUN echo "https://dl-cdn.alpinelinux.org/alpine/edge/testing" >> /etc/apk/repositories && apk update \
     && apk --no-cache add \
     # Tools to build ncrack
@@ -10,7 +10,7 @@ RUN echo "https://dl-cdn.alpinelinux.org/alpine/edge/testing" >> /etc/apk/reposi
     && make \
     && make install 
 
-FROM alpine:latest
+FROM alpine:3.12
 
 # Keeps Python from generating .pyc files in the container
 ENV PYTHONDONTWRITEBYTECODE=1
@@ -21,6 +21,15 @@ ENV PYTHONUNBUFFERED=1
 # For attacker to only publish port  80, not whole interface od host
 EXPOSE 80
 
+# Few tools are only in testing
+RUN echo "https://dl-cdn.alpinelinux.org/alpine/edge/testing" >> /etc/apk/repositories && apk update \
+    && apk --no-cache add \
+    # Install tools for pytbull
+    python3 nmap nmap-nselibs nmap-scripts nikto apache2-utils scapy hping3 tcpreplay apache2 openssh-server vsftpd \
+    # Install python requirements
+    py3-feedparser py3-paramiko py3-requests py3-m2crypto py3-pip \
+    && python3 -m pip install scapy cherrypy debugpy 
+
 # Add files
 ADD entrypoint.sh /pytbull/
 ADD source/ /pytbull
@@ -30,15 +39,7 @@ ADD confs/httpd.conf /etc/apache2/httpd.conf
 ADD clientsideattacks.tar.bz2 /var/www/localhost/htdocs/malicious/
 ADD http://malc0de.com/bl/IP_Blacklist.txt /pytbull/data/
 
-# Few tools are only in testing
-RUN echo "https://dl-cdn.alpinelinux.org/alpine/edge/testing" >> /etc/apk/repositories && apk update \
-    && apk --no-cache add \
-    # Install tools for pytbull
-    python3 nmap nmap-nselibs nmap-scripts nikto apache2-utils scapy hping3 tcpreplay apache2 openssh-server vsftpd \
-    # Install python requirements
-    py3-feedparser py3-paramiko py3-requests py3-m2crypto py3-pip \
-    && python3 -m pip install scapy cherrypy \
-    && chmod +x /pytbull/entrypoint.sh
+RUN chmod +x /pytbull/entrypoint.sh
     
 # Add ncrack files from builder
 COPY --from=builder /usr/local/share/ncrack/ /usr/local/share/ncrack/
