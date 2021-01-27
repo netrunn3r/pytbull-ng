@@ -5,12 +5,13 @@ usage() {
     exit 1
 }
 
-while getopts ":m:t:l:" o; do
+while getopts ":m:t:l:d" o; do
     case "${o}" in
         m)
             m=${OPTARG}
             if [ "${m}" != "attacker" -a "${m}" != "victim" ]; then
-               usage
+                echo "Mode can be only attacker or victim"
+                usage
             fi
             ;;
         t)
@@ -19,7 +20,11 @@ while getopts ":m:t:l:" o; do
         l)
             ip=${OPTARG}
             ;;
+        d)
+            debug="-m debugpy --listen 0.0.0.0:5678 --wait-for-client"
+            ;;
         *)
+            echo "Unknown parameters"
             usage
             ;;
     esac
@@ -27,10 +32,12 @@ done
 shift $((OPTIND-1))
 
 if [ -z "${m}" ]; then
+    echo "No mode selected"
     usage
 fi
 
 if [ "${m}" = "victim" -a -n "${t}" ]; then
+    echo "Victim mode need not parameters"
     usage
 fi
 
@@ -88,14 +95,22 @@ fi
 if [ "${m}" = "attacker" ]; then
     httpd 2>/dev/null
     netstat -tlpn
-    time python3 /pytbull/pytbull -t ${t} -r --offline
+    if [ -z "${debug}" ]; then
+        time python3 /pytbull/pytbull -t ${t} -r --offline
+    else
+        time python3 ${debug} /pytbull/pytbull -t ${t} -r --offline
+    fi
 elif [ "${m}" = "victim" ]; then
     vsftpd /etc/vsftpd/vsftpd.conf &
     ssh-keygen -f /etc/ssh/ssh_host_rsa_key -q -N "" 
     /usr/sbin/sshd 
     httpd 2>/dev/null
     netstat -tlpn
-    python3 /pytbull/server/pytbull-server.py
+    if [ -z "${debug}" ]; then
+        python3 /pytbull/server/pytbull-server.py
+    else
+        python3 ${debug} /pytbull/server/pytbull-server.py
+    fi
 fi 
 
 echo -e "\nStart: ${start_date}"
