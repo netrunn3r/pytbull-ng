@@ -53,7 +53,7 @@ On victim host run:
 
 ```console
 $ docker network create -d macvlan --subnet=<host network> --gateway=<host gateway ip> -o parent=<host interface> net_pub
-$ docker run --rm -it --network=net_pub --ip=<ip from host network> --name=pytbull-ng_victim efigo/pytbull-ng -m victim
+$ docker run --rm -it --network=net_pub --ip=<free ip from host network> --name=pytbull-ng_victim efigo/pytbull-ng -m victim
 ```
 
 On attacker host run:
