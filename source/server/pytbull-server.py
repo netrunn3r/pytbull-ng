@@ -29,6 +29,7 @@ import sys
 import socket
 import subprocess
 import os
+import json
 
 class PytbullServer():
     def __init__(self, banner, port):
@@ -36,6 +37,7 @@ class PytbullServer():
         self.host = ''
         self.port = port
         self.socksize = 1024
+        self.socket_timeout = 30
 
         print(banner)
         print("")
@@ -63,26 +65,35 @@ class PytbullServer():
         print("")
         print("Server started on port: %s" % self.port)
         s.listen(1)
+        print("Listening...")
         while True:
-            print("Listening...")
             try:
                 conn, addr = s.accept()
-                while True:
-                    print('\n> Orders from %s:%d' % (addr[0], addr[1]))
-                    data = conn.recv(self.socksize).decode()
-                    print(f'> Command to execute: {data}')
-                    cmd = ['/bin/sh', '-c', data]
-                    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE).wait()
-                    # Issue 3450032 - Synchronisation issue. The server has to instruct
-                    # the client that the file has been successfully downloaded before
-                    # it goes to next file
-                    conn.send('done'.encode())
-                    if not data:
-                        break
-                    elif data == 'killsrv':
-                        sys.exit()
+                conn.settimeout(self.socket_timeout)
+                data_raw = conn.recv(self.socksize).decode()
+                if not data_raw:
+                    continue
+                print('\n> Orders from %s:%d' % (addr[0], addr[1]))
+                data = json.loads(data_raw)
+                timeout = data.get("timeout")
+                payload = data.get("payload")
+                if payload == 'killsrv':
+                    sys.exit()
+                print(f'> Command to execute (limit: {timeout}s/{self.socket_timeout}s): {payload}')
+                cmd = ['/bin/sh', '-c', payload]
+                try:
+                    subprocess.run(cmd, timeout=timeout, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                except subprocess.TimeoutExpired:
+                    print("Process timeout...", end='')
+                # Issue 3450032 - Synchronisation issue. The server has to instruct
+                # the client that the file has been successfully downloaded before
+                # it goes to next file
+                conn.send('done'.encode())
+                conn.close()
             except ConnectionResetError as e:
                 print('Connection reset by peer, starting new listener')
+            except socket.timeout:
+                print('Socket timeout...')
 
 if __name__ == '__main__':
 
