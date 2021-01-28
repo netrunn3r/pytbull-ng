@@ -45,6 +45,7 @@ import re
 ##import urllib2
 import urllib.request
 #import types  # python2
+import json
 
 # dirty fix to bypass SSL cert error when intercepting SSL traffic
 # with autosigned cert
@@ -513,65 +514,64 @@ class Pytbull():
                 print("\n***ERROR: Please setup reverse shell on remote server first or use --mode=gateway!")
                 sys.exit(0)
             print("[   OK   ]")
+            s.close()
 
         for payload in payloads:
-            # Perform test & write report
-            timeout = 10
-            test_dt_start = datetime.now()
-            test_dt_start_str = datetime.now().strftime("%H:%m:%S")
-            test_dt_timeout_str = (datetime.now()+timedelta(seconds=timeout)).strftime("%H:%m:%S")
-            str = "TEST #%s - [%s-%s] - %s" % (self.testnum, test_dt_start_str, test_dt_timeout_str, payload[0])
-            print(str[:67].ljust(70,'.'), end='')
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                s.connect((self._target, int(self.config.get('SERVER', 'reverseshellport'))))
+                # Perform test & write report
+                timeout = 10
+                test_dt_start = datetime.now().strftime("%H:%m:%S")
+                str = "TEST #%s - [%s] - %s" % (self.testnum, test_dt_start, payload[0])
+                print(str[:67].ljust(70,'.'), end='')
 
-            if self._mode=="standalone":
-                # Send cmd to execute on server side (wget file)
-                #s.send(f"wget -O /dev/null {os.path.join(self.config.get('PATHS', 'urlpdf'), payload[0])}".encode())
-                s.send(f"wget -T {timeout} {os.path.join(self.config.get('PATHS', 'urlpdf'), payload[0])} && rm {payload[0]}".encode())
-                # Issue 3450032 - Synchronisation issue. The server has to instruct
-                # the client that the file has been successfully downloaded before it
-                # goes to next file
-                s.recv(1024)
-            else:
-                self.downloadFile(self.config.get('PATHS', 'urlpdf'), payload[0])
+                if self._mode=="standalone":
+                    # Send cmd to execute on server side (wget file)
+                    payload = f"wget -O /dev/null {os.path.join(self.config.get('PATHS', 'urlpdf'), payload[0])}"
+                    data = json.dumps({"timeout": timeout, "payload": payload})
+                    s.send(data.encode())
+                    # Issue 3450032 - Synchronisation issue. The server has to instruct
+                    # the client that the file has been successfully downloaded before it
+                    # goes to next file
+                    ret_msg = s.recv(1024).decode()
+                else:
+                    self.downloadFile(self.config.get('PATHS', 'urlpdf'), payload[0])
+                    ret_msg = 'done'
 
-            # Sleep before getting alerts
-            time.sleep(int(self.config.get('TIMING', 'sleepbeforegetalerts')))
+                # Sleep before getting alerts
+                time.sleep(int(self.config.get('TIMING', 'sleepbeforegetalerts')))
 
-            # Get new alerts and calculate new offset
-            res = ''
-            test_sig_match = ''
-            test_flag = ''
-            # self.getAlertsFile()
-            # res = self.getAlertsFromOffset(self.config.get('PATHS', 'tempfile'), self.offset)
+                # Get new alerts and calculate new offset
+                res = ''
+                test_sig_match = ''
+                test_flag = ''
+                # self.getAlertsFile()
+                # res = self.getAlertsFromOffset(self.config.get('PATHS', 'tempfile'), self.offset)
 
-            # # Sig matching
-            # pattern = payload[1]
-            # if pattern != "":
-            #     if re.search(pattern, res):
-            #         test_flag = 2
-            #     else:
-            #         if res == '':
-            #             test_flag = 0
-            #         else:
-            #             test_flag = 1
-            #     test_sig_match = pattern
-            # else:
-            #     test_sig_match = None
-            #     test_flag = None
+                # # Sig matching
+                # pattern = payload[1]
+                # if pattern != "":
+                #     if re.search(pattern, res):
+                #         test_flag = 2
+                #     else:
+                #         if res == '':
+                #             test_flag = 0
+                #         else:
+                #             test_flag = 1
+                #     test_sig_match = pattern
+                # else:
+                #     test_sig_match = None
+                #     test_flag = None
 
-            # self.offset = self.getOffset(self.config.get('PATHS', 'tempfile'))
+                # self.offset = self.getOffset(self.config.get('PATHS', 'tempfile'))
 
-            test_dt_end = datetime.now()
-            database.DB(self._cnf).addTestResult(('clientSideAttacks', 'wget', test_dt_start,
-                test_dt_end, payload[0], None, None, None,
-                test_sig_match, res, test_flag))
+                test_dt_end = datetime.now()
+                database.DB(self._cnf).addTestResult(('clientSideAttacks', 'wget', test_dt_start,
+                    test_dt_end, payload[0], None, None, None,
+                    test_sig_match, res, test_flag))
 
-            print("[  done  ]")
-            self.testnum += 1
-
-        if self._mode=="standalone":
-            # Close socket
-            s.close()
+                print(f"[  {ret_msg}  ]")
+                self.testnum += 1
 
 
     def doAllTests(self):
