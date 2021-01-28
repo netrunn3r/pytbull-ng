@@ -30,7 +30,7 @@ RUN echo "https://dl-cdn.alpinelinux.org/alpine/edge/testing" >> /etc/apk/reposi
     py3-feedparser py3-paramiko py3-requests py3-m2crypto py3-pip \
     && python3 -m pip install scapy cherrypy debugpy 
 
-# Add files 
+# Add files
 ADD entrypoint.sh /pytbull/
 ADD source/ /pytbull
 ADD confs/vsftpd.conf /etc/vsftpd/vsftpd.conf
