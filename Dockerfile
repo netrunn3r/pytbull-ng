@@ -3,12 +3,28 @@ RUN echo "https://dl-cdn.alpinelinux.org/alpine/edge/testing" >> /etc/apk/reposi
     && apk --no-cache add \
     # Tools to build ncrack
     autoconf automake gcc g++ make musl-dev openssl-dev zlib-dev libssl1.1 libssh-dev python3-dev libffi-dev \
+    # Tools to build snort3
+    git cmake daq-dev libdnet-dev hwloc-dev luajit-dev libpcap-dev pcre-dev libunwind-dev libtirpc-dev libtool \
+    # Build ncrack
     && wget https://nmap.org/ncrack/dist/ncrack-0.7.tar.gz \
     && tar -xzf ncrack-0.7.tar.gz \
     && cd ncrack-0.7 \    
     && ./configure \
     && make \
-    && make install 
+    && make install \
+    # Build snort3
+    && git clone git://github.com/snort3/libdaq.git \
+    && cd libdaq \
+    && ./bootstrap.sh \
+    && ./configure \
+    && make \
+    && make install \
+    && cd / \
+    && git clone git://github.com/snort3/snort3.git \
+    && cd snort3 \
+    && ./configure_cmake.sh \
+    && cd build \
+    && make -j $(nproc) 
 
 FROM alpine:3.12
 
