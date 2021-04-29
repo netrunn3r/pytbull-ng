@@ -77,8 +77,8 @@ class PytbullServer():
                 data = json.loads(data_raw)
                 timeout = data.get("timeout")
                 payload = data.get("payload")
-                if payload == 'killsrv':
-                    sys.exit()
+                # if payload == 'killsrv':  # unused?
+                #     sys.exit()
                 print(f'> Command to execute (limit: {timeout}s/{self.socket_timeout}s): {payload}')
                 cmd = ['/bin/sh', '-c', payload]
                 try:
