@@ -43,7 +43,7 @@ $ docker run --rm -it efigo/pytbull-ng -m victim
 On second one:
 
 ```console
-$ docker  run --rm -it efigo/pytbull -m attacker -t <ip from victim>
+$ docker  run --rm -it efigo/pytbull-ng -m attacker -t <ip from victim>
 ```
 
 ## Testing IDS/IPS
@@ -77,6 +77,14 @@ This image is based on *main* branch from github, which contains working, but no
 ## `pytbull-ng:stable`
 
 This image is based on *stable* branch from github, which contains working and widely tested features.
+
+# Known problems
+## Network issue with VirtualBox
+If you use VirtualBox as a docker host, you need to set in virtual machine configuration network adapter in promiscous mode **and** in docker host linux (which run in that virtual machine) promiscous mode on local network interface, using this command: `sudo ip link <INT_NAME> set promisc on`. This have to be done for pytbull-ng in victim mode.
+
+References:
+* https://superuser.com/questions/1343250/is-it-possible-to-attach-docker-containers-inside-ubuntu-virtualbox-to-phyical-n  
+* https://forums.docker.com/t/why-is-promiscuous-mode-needed-for-macvlan-driver/37416
 
 # License
 
